@@ -6,27 +6,7 @@ import scanner
 console = Console()
 
 
-
-def display_results(hosts, subnet):
-    table = Table(
-        title=f"Network Scan Results — {subnet}",
-        box=box.ROUNDED,
-        show_header=True,
-        header_style="bold cyan"
-    )
-
-    table.add_column("IP Address", style="cyan", width=20)
-    table.add_column("MAC Address", style="white", width=20)
-    table.add_column("Vendor", style="green", width=20)
-
-    for host in hosts:
-        vendor = get_vendor(host["mac"])
-        table.add_row(host["ip"], host["mac"], vendor)
-
-    console.print(table)
-
 def get_vendor(mac):
-    # Check the first 8 characters (OUI prefix) of the MAC address
     oui = mac[:8].upper()
     vendors = {
         "00:50:56": "VMware",
@@ -39,6 +19,38 @@ def get_vendor(mac):
         "AC:84:C6": "Tuya Smart",
     }
     return vendors.get(oui, "Unknown")
+
+
+def display_results(hosts, subnet):
+    table = Table(
+        title=f"Network Scan Results — {subnet}",
+        box=box.ROUNDED,
+        show_header=True,
+        header_style="bold cyan"
+    )
+
+    table.add_column("IP Address", style="cyan", width=18)
+    table.add_column("MAC Address", style="white", width=20)
+    table.add_column("Vendor", style="green", width=14)
+    table.add_column("Open Ports", style="white", width=40)
+
+    for host in hosts:
+        vendor = get_vendor(host["mac"])
+
+        if host["ports"]:
+            port_lines = []
+            for p in host["ports"]:
+                if p["ot_flag"]:
+                    port_lines.append(f"[red]{p['port']} {p['service']} ⚠ OT[/red]")
+                else:
+                    port_lines.append(f"{p['port']} {p['service']}")
+            ports_str = "\n".join(port_lines)
+        else:
+            ports_str = "[dim]none[/dim]"
+
+        table.add_row(host["ip"], host["mac"], vendor, ports_str)
+
+    console.print(table)
 
 
 if __name__ == "__main__":

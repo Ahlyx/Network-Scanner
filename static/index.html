@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 { color: #00ffff; font-size: 2rem; margin-bottom: 10px; letter-spacing: 2px; }
+        p.subtitle { color: #888; margin-bottom: 30px; font-size: 0.9rem; }
+
+        .controls { display: flex; gap: 10px; margin-bottom: 30px; }
+
+        input {
+            background: #1a1a1a;
+            border: 1px solid #00ffff;
+            color: #e0e0e0;
+            padding: 10px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            width: 220px;
+            outline: none;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover { background: #00ffff; color: #0d0d0d; }
+
+        #status { color: #888; margin-bottom: 20px; font-size: 0.85rem; min-height: 20px; }
+
+        table { width: 100%; max-width: 900px; border-collapse: collapse; }
+
+        th {
+            color: #00ffff;
+            border-bottom: 1px solid #00ffff;
+            padding: 10px 15px;
+            text-align: left;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        td { padding: 10px 15px; border-bottom: 1px solid #1a1a1a; font-size: 0.9rem; }
+        tr:hover td { background: #1a1a1a; }
+
+        .vendor { color: #00ffff; }
+        .ot-flag { color: #ff4444; font-weight: bold; }
+        .port-normal { color: #aaaaaa; }
+        .no-ports { color: #444; }
+    </style>
+</head>
+<body>
+    <h1>NETWORK SCANNER</h1>
+    <p class="subtitle">ARP scan your local network</p>
+
+    <div class="controls">
+        <input type="text" id="subnet" value="192.168.234.0/24" placeholder="e.g. 192.168.1.0/24">
+        <button onclick="runScan()">SCAN</button>
+    </div>
+
+    <div id="status">Ready.</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>IP ADDRESS</th>
+                <th>MAC ADDRESS</th>
+                <th>VENDOR</th>
+                <th>OPEN PORTS</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+
+    <script>
+        const vendors = {
+            "00:50:56": "VMware",
+            "00:0c:29": "VMware VM",
+            "00:1a:11": "Google",
+            "b8:27:eb": "Raspberry Pi",
+            "dc:a6:32": "Raspberry Pi",
+            "00:17:88": "Philips Hue",
+            "18:b4:30": "Nest",
+            "ac:84:c6": "Tuya Smart",
+        };
+
+        function getVendor(mac) {
+            const oui = mac.slice(0, 8).toLowerCase();
+            return vendors[oui] || "Unknown";
+        }
+
+        async function runScan() {
+            const subnet = document.getElementById("subnet").value;
+            const status = document.getElementById("status");
+            const results = document.getElementById("results");
+
+            status.textContent = `Scanning ${subnet}...`;
+            results.innerHTML = "";
+
+            try {
+                const response = await fetch(`/api/scan?subnet=${encodeURIComponent(subnet)}`);
+                const data = await response.json();
+
+                status.textContent = `Found ${data.hosts_found} host(s) on ${data.subnet}`;
+
+                data.hosts.forEach(host => {
+                    const row = document.createElement("tr");
+
+                    const ip = document.createElement("td");
+                    ip.textContent = host.ip;
+
+                    const mac = document.createElement("td");
+                    mac.textContent = host.mac;
+
+                    const vendor = document.createElement("td");
+                    vendor.textContent = getVendor(host.mac);
+                    vendor.classList.add("vendor");
+
+                    const ports = document.createElement("td");
+                    if (host.ports.length === 0) {
+                        const none = document.createElement("span");
+                        none.textContent = "none";
+                        none.classList.add("no-ports");
+                        ports.appendChild(none);
+                    } else {
+                        host.ports.forEach(p => {
+                            const span = document.createElement("div");
+                            span.textContent = `${p.port} ${p.service}${p.ot_flag ? " ⚠ OT" : ""}`;
+                            span.classList.add(p.ot_flag ? "ot-flag" : "port-normal");
+                            ports.appendChild(span);
+                        });
+                    }
+
+                    row.appendChild(ip);
+                    row.appendChild(mac);
+                    row.appendChild(vendor);
+                    row.appendChild(ports);
+                    results.appendChild(row);
+                });
+
+            } catch (err) {
+                status.textContent = "Error: could not reach API.";
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
