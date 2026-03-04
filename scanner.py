@@ -71,23 +71,3 @@ def scan(subnet):
         })
 
     return hosts
-
-
-if __name__ == "__main__":
-    subnet = "192.168.234.0/24"
-    print(f"Scanning {subnet}...\n")
-
-    hosts = scan(subnet)
-
-    if not hosts:
-        print("No hosts found.")
-    else:
-        print(f"Found {len(hosts)} host(s):\n")
-        for host in hosts:
-            print(f"  IP: {host['ip']:<16} MAC: {host['mac']}")
-            if host['ports']:
-                for p in host['ports']:
-                    flag = " *** OT DEVICE ***" if p['ot_flag'] else ""
-                    print(f"    Port {p['port']:<6} {p['service']}{flag}")
-            else:
-                print(f"    No open ports found")
