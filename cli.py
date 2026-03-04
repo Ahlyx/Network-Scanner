@@ -2,9 +2,10 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 import scanner
+import argparse
+
 
 console = Console()
-
 
 def get_vendor(mac):
     oui = mac[:8].upper()
@@ -54,7 +55,16 @@ def display_results(hosts, subnet):
 
 
 if __name__ == "__main__":
-    subnet = "192.168.234.0/24"
+    parser = argparse.ArgumentParser(
+        description="Network scanner - ARP scan with OT port detection"
+    )
+    parser.add_argument(
+        "--subnet",
+        default="192.168.234.0/24",
+        help="Subnet to scan in CIDR notation e.g. 192.168.1.0/24"
+    )
+    args = parser.parse_args()
+    subnet = args.subnet
 
     console.print(f"\n[cyan]Scanning {subnet}...[/cyan]\n")
 
