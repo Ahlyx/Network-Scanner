@@ -1,4 +1,5 @@
-from scapy.all import ARP, Ether, srp
+from scapy.all import ARP, Ether, srp, conf
+conf.verb = 0
 
 
 def scan(subnet):
@@ -6,10 +7,7 @@ def scan(subnet):
     ether = Ether(dst="ff:ff:ff:ff:ff:ff")
     packet = ether / arp
 
-    answered, unanswered = srp(packet, iface="ens33", timeout=2, verbose=True)
-    
-    print(f"\nAnswered: {len(answered)}")
-    print(f"Unanswered: {len(unanswered)}")
+    answered, unanswered = srp(packet, iface="ens33", timeout=2, verbose=False)
 
     hosts = []
     for sent, received in answered:
