@@ -2,6 +2,7 @@ from scapy.all import ARP, Ether, srp, conf
 import socket
 
 conf.verb = 0
+iface = conf.iface
 
 # Known OT/ICS ports
 OT_PORTS = {
@@ -23,8 +24,8 @@ COMMON_PORTS = [21, 22, 23, 80, 443, 8080, 8443] + list(OT_PORTS.keys())
 def scan_ports(ip):
     open_ports = []
     for port in COMMON_PORTS:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             result = sock.connect_ex((ip, port))
             if result == 0:
@@ -33,9 +34,8 @@ def scan_ports(ip):
                     "service": OT_PORTS.get(port, get_common_service(port)),
                     "ot_flag": port in OT_PORTS
                 })
+        finally:
             sock.close()
-        except Exception:
-            pass
     return open_ports
 
 
@@ -57,7 +57,7 @@ def scan(subnet):
     ether = Ether(dst="ff:ff:ff:ff:ff:ff")
     packet = ether / arp
 
-    answered, unanswered = srp(packet, iface="ens33", timeout=2, verbose=False)
+    answered, unanswered = srp(packet, iface=iface, timeout=2, verbose=False)
 
     hosts = []
     for sent, received in answered:
