@@ -5,7 +5,7 @@ import scanner
 import argparse
 
 
-console = Console()
+console = Console(emoji=False)
 
 def get_vendor(mac):
     oui = mac[:8].upper()
