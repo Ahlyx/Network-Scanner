@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -9,6 +9,7 @@ import ipaddress
 
 
 app = FastAPI()
+MAX_SCAN_ADDRESSES = 256
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -29,13 +30,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @limiter.limit("5/minute")
 def run_scan(request: Request, subnet: str = "192.168.234.0/24"):
     try:
-        ipaddress.IPv4Network(subnet, strict=False)
+        network = ipaddress.ip_network(subnet, strict=False)
     except ValueError:
-        return {"error": "Invalid subnet format"}
+        raise HTTPException(status_code=400, detail="invalid IPv4 subnet")
+
+    if not isinstance(network, ipaddress.IPv4Network):
+        raise HTTPException(status_code=400, detail="only IPv4 lab subnets are supported")
+    if network.num_addresses > MAX_SCAN_ADDRESSES:
+        raise HTTPException(status_code=400, detail="subnet is too large; maximum is /24")
     
-    hosts = scanner.scan(subnet)
+    hosts = scanner.scan(network.with_prefixlen)
     return {
-        "subnet": subnet,
+        "subnet": network.with_prefixlen,
         "hosts_found": len(hosts),
         "hosts": hosts
     }

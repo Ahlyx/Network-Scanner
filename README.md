@@ -65,7 +65,7 @@ Outputs a Rich-formatted table with discovered hosts, MAC addresses, vendor info
 Start the API server:
 
 ```bash
-sudo venv/bin/python3 -m uvicorn api:app --reload
+sudo venv/bin/python3 -m uvicorn api:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Open your browser and go to:
@@ -74,7 +74,7 @@ Open your browser and go to:
 http://localhost:8000/static/index.html
 ```
 
-Enter a subnet (e.g. `192.168.1.0/24`) and click **SCAN**.
+Enter a subnet (e.g. `192.168.1.0/24`) and click **SCAN**. The API accepts IPv4 lab targets up to `/24` (256 addresses); larger networks and IPv6 input are rejected.
 
 ### API Endpoint
 
@@ -130,13 +130,14 @@ The scanner flags the following industrial control system ports:
 - Subnet input is validated using Python's `ipaddress` module before being passed to Scapy
 - The web frontend uses `textContent` and `createElement` throughout — no `innerHTML` — to prevent XSS
 - Rate limited to 5 scans per minute via slowapi
+- API requests are limited to IPv4 `/24` targets or smaller
 - Scapy requires root privileges for raw packet sending — always run with `sudo`
 
 ---
 
 ## Important
 
-**Only scan networks you own or have explicit permission to scan.** Unauthorized network scanning is illegal in most jurisdictions. This tool is intended for use in lab environments and on networks you control.
+**Only scan networks you own or have explicit permission to scan.** Unauthorized network scanning is illegal in most jurisdictions. This tool is intended for local/lab environments and owner-controlled networks. The Uvicorn example binds to `127.0.0.1`; do not expose it to a LAN or the internet without a deliberate access-control design.
 
 ---
 
